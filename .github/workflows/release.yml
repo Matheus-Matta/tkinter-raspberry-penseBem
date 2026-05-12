@@ -29,13 +29,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name "PenseBem_Linux_x64" main.py
+          pyinstaller --noconfirm --onefile --windowed --name "penseBem_${{ github.ref_name }}" main.py
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/PenseBem_Linux_x64
+          files: dist/penseBem_${{ github.ref_name }}
           draft: false
           prerelease: false
           make_latest: true
