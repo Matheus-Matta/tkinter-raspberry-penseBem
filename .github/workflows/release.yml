@@ -12,30 +12,38 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Configurar QEMU (emulação ARMv6)
+        uses: docker/setup-qemu-action@v3
         with:
-          python-version: '3.10'
+          platforms: arm
 
-      - name: Install system dependencies
-        run: sudo apt-get install -y python3-tk
-
-      - name: Install dependencies
+      - name: Compilar para Raspberry Pi 1 (ARMv6 32-bit)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          docker run --rm --platform linux/arm/v6 \
+            -v "$GITHUB_WORKSPACE:/build" \
+            -w /build \
+            arm32v6/debian:bullseye \
+            bash -c "
+              set -e
+              apt-get update -q
+              apt-get install -y -q python3 python3-pip python3-tk tk tcl upx-ucl binutils
+              pip3 install --no-cache-dir customtkinter==5.2.2 darkdetect typing_extensions pyinstaller
+              python3 -m PyInstaller \
+                --onefile \
+                --noconsole \
+                --name penseBem_${{ github.ref_name }} \
+                --collect-all customtkinter \
+                main.py
+            "
 
-      - name: Build with PyInstaller
-        run: |
-          pyinstaller --noconfirm --onefile --windowed --name "penseBem_${{ github.ref_name }}" main.py
-
-      - name: Create Release
+      - name: Criar Release no GitHub
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: dist/penseBem_${{ github.ref_name }}
           draft: false
